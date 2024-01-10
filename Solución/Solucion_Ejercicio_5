@@ -1,0 +1,31 @@
+/* Hola Alex, 
+
+Para este ejercicio he creado las funciones que utilizaria para limpiar las tres tablas que contienen la información. He indicado los tres scripts en una misma query para tenerlas todos a mano y poder visualizarlo más rapidamente. Las funciones unicamente limpian los campos enteros de cada tabla. Es por eso que son funciones tan cortas. 
+En caso de que se deseara ejecutar las querys, habría que ejecutarlas por separado. 
+
+Por último, al ser el último script, aprovecho la ocasión para agradecerte personalmente las clases y todo lo que nos has transmitido. Ha sio mi primer contacto con bases de datos y me ha resultado muy interesante y super práctico. Te deseo lo mejor para el futuro. 
+
+Muchas gracias
+Un saludo
+Pedro Turiel*/
+
+--Limpieza tabla ivr_calls
+CREATE OR REPLACE TABLE keepcoding.clean_ivr_calls AS 
+SELECT 
+  IFNULL(steps_module,-999999) as steps_module
+FROM keepcoding.ivr_calls
+
+--Limpieza tabla ivr_modules
+CREATE OR REPLACE TABLE keepcoding.clean_ivr_modules AS 
+SELECT 
+  IFNULL(module_sequece,-999999) as module_sequence,
+  IFNULL(module_duration,-999999) as module_duration,
+FROM keepcoding.ivr_modules
+
+--Limpieza tabla ivr_steps
+CREATE OR REPLACE TABLE keepcoding.clean_ivr_steps AS 
+SELECT 
+  IFNULL(module_sequece,-999999) as module_sequence,
+  IFNULL(step_sequence,-999999) as step_sequence,
+FROM keepcoding.ivr_steps
+
