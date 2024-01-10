@@ -1,0 +1,127 @@
+/* Hola Alex
+
+Te presento a continuación mi solución para el ejercicio 4. Las ideas principales que quiero resaltar son:
+
+  - Para el cálculo de los campos que había que hacer alguna operación, los he hecho con un WITH AS y luego los he ido uniendo con la tabla detail para ir creando la tabla ivr_summary.
+
+  - Para los campos document_type, document_identification, customer_phone y billing_account_id, he particionado las tablas por el ivr_id y de ahí por medio de un row_number descartaba todos los valores UNKNOWN menos aquel valor que nos interesaba coger.
+
+  - El campo masiva_lg he utilizado la función LIKE para calcuarlo.
+
+  - Los campos info_by_phone_lg e info_by_dni_lg he utilizado también la partición y la función row number pero en este caso para la segunda condición (la de que el erro fuera UNKNOWN) lo he hecho a la inversa. He utilizado la función LIKE pero buscando la palabra ERROR. De este modo descarto todos los valores que posean la palabra ERROR y solo me quedo con los UNKNOWN (previamente he comprobado que los únicos valores posibles del campo step_description_error fueran UNKNOWN o UNKNOWN ERROR)
+
+  - Para los campos de 24 horas antes y después, he decidido realizar el cálculo en microsegundos por hacerlo más preciso. Debido a que no sé respecto a que fecha se desea calcular las 24horas, he decidido dejarlo como CURRENT_TIMESTAMP ya que me parece que a las compañias les interesa conocer estos valores de cada vez que ejectuen la query y por lo tanto, de este modo no tienen que cambiar nada del código. En caso de que se quisiera calcular la diferencia de fechas respecto a una fecha concreta, se podría sustituir facilmente. 
+  
+  - Por último, para el campo cause_recall_phone_24H he decidido cambiar unicamente los valores de la condición para así no tener que cambiar nada de la función. En vez de jugar con los valores positivos de la resta, lo cálculo en base a los valores negativos.
+
+He intentado indicar todo el código de la forma más clara posible. Espero que sea legible. 
+
+Muchas gracias por todo, 
+Un saludo
+Pedro Turiel*/
+
+
+CREATE OR REPLACE TABLE keepcoding.ivr_sumary AS
+
+WITH vdn_aggregation_table
+  AS (SELECT calls_ivr_id,
+        CASE 
+          WHEN (SUBSTRING(calls_vdn_label,1,3)= 'ATC') THEN 'FRONT'
+          WHEN (SUBSTRING(calls_vdn_label,1,4)= 'TECH') THEN 'TECH'
+          WHEN (calls_vdn_label= 'ABSORPTION') THEN 'ABSORPTION'
+          ELSE 'RESTO'
+        END AS vdn_aggregation 
+      FROM keepcoding.ivr_detail),
+
+  document_type_table
+  AS(SELECT
+      ROW_NUMBER() OVER (PARTITION BY CAST(calls_ivr_id as STRING) ORDER BY document_type) as id,
+      calls_ivr_id,
+      document_type, 
+  FROM keepcoding.ivr_detail
+  GROUP BY calls_ivr_id, document_type
+  ORDER BY calls_ivr_id),
+
+  document_identification_table
+  AS(SELECT
+    ROW_NUMBER() OVER (PARTITION BY CAST(calls_ivr_id as STRING) ORDER BY document_identification) as id,
+    calls_ivr_id,
+    document_identification, 
+  FROM keepcoding.ivr_detail
+  GROUP BY calls_ivr_id, document_identification
+  ORDER BY calls_ivr_id),
+
+  customer_phone_table
+  AS(SELECT
+      ROW_NUMBER() OVER (PARTITION BY CAST(calls_ivr_id as STRING) ORDER BY customer_phone) as id,
+      calls_ivr_id,
+      customer_phone, 
+  FROM keepcoding.ivr_detail
+  GROUP BY calls_ivr_id, customer_phone
+  ORDER BY calls_ivr_id),
+
+  billing_account_table
+  AS(SELECT
+      ROW_NUMBER() OVER (PARTITION BY CAST(calls_ivr_id as STRING) ORDER BY billing_account_id) as id,
+      calls_ivr_id,
+      billing_account_id, 
+  FROM keepcoding.ivr_detail
+  GROUP BY calls_ivr_id, billing_account_id
+  ORDER BY calls_ivr_id),
+
+  info_by_phone_log_table
+  AS(SELECT 
+      calls_ivr_id,
+      ROW_NUMBER() OVER (PARTITION BY CAST(calls_ivr_id as STRING) ORDER BY calls_ivr_id) as id,
+      IF(step_name = 'CUSTOMERINFOBYPHONE.TX' AND step_description_error NOT LIKE '%ERROR%',1,0) as info_by_phone_lg,
+    FROM keepcoding.ivr_detail
+    GROUP BY calls_ivr_id,info_by_phone_lg
+    ORDER BY calls_ivr_id),
+
+  info_by_dni_lg_table
+  AS(SELECT 
+    calls_ivr_id,
+    ROW_NUMBER() OVER (PARTITION BY CAST(calls_ivr_id as STRING) ORDER BY calls_ivr_id) as id,
+    IF(step_name = 'CUSTOMERINFOBYDNI.TX' AND step_description_error NOT LIKE '%ERROR%',1,0) as info_by_dni_lg,
+  FROM keepcoding.ivr_detail
+  GROUP BY calls_ivr_id, info_by_dni_lg
+  ORDER BY calls_ivr_id)
+
+SELECT  
+  ivr_detail.calls_ivr_id as ivr_id,
+  ivr_detail.calls_phone_number as phone_number,
+  ivr_detail.calls_ivr_result as ivr_result,
+  vdn_aggregation_table.vdn_aggregation as vdn_aggregation,
+  ivr_detail.calls_start_date as start_date,
+  ivr_detail.calls_end_date as end_date,
+  ivr_detail.calls_customer_segment as customer_segment,
+  ivr_detail.calls_ivr_language as ivr_language,
+  ivr_detail.calls_steps_module as steps_module,
+  ivr_detail.calls_module_aggregation as module_aggregation,
+  document_type_table.document_type as document_type,
+  document_identification_table.document_identification as document_identification,
+  customer_phone_table.customer_phone as customer_phone,
+  billing_account_table.billing_account_id as billing_account_id,
+  IF(ivr_detail.calls_module_aggregation LIKE '%AVERIA_MASIVA%',1,0) as masiva_lg,
+  MAX (info_by_phone_log_table.info_by_phone_lg) as info_by_phone_lg,
+  MAX (info_by_dni_lg_table.info_by_dni_lg) as info_by_dni_lg,
+  IF(DATE_DIFF(CURRENT_TIMESTAMP, TIMESTAMP(calls_start_date),microsecond)BETWEEN 0 AND 86400000000 ,1,0) as repeated_phone_24H,
+  IF(DATE_DIFF(CURRENT_TIMESTAMP, TIMESTAMP(calls_start_date),microsecond)BETWEEN -86400000000 AND 0 ,1,0) as cause_recall_phone_24H
+
+FROM keepcoding.ivr_detail
+LEFT JOIN vdn_aggregation_table
+ON ivr_detail.calls_ivr_id= vdn_aggregation_table.calls_ivr_id
+LEFT JOIN document_type_table
+ON ivr_detail.calls_ivr_id = document_type_table.calls_ivr_id AND document_type_table.id =1
+LEFT JOIN document_identification_table
+ON ivr_detail.calls_ivr_id = document_identification_table.calls_ivr_id AND document_identification_table.id =1
+LEFT JOIN customer_phone_table
+ON ivr_detail.calls_ivr_id = customer_phone_table.calls_ivr_id AND customer_phone_table.id =1
+LEFT JOIN billing_account_table
+ON ivr_detail.calls_ivr_id = billing_account_table.calls_ivr_id AND billing_account_table.id =1
+LEFT JOIN info_by_phone_log_table
+ON ivr_detail.calls_ivr_id = info_by_phone_log_table.calls_ivr_id
+LEFT JOIN info_by_dni_lg_table
+ON ivr_detail.calls_ivr_id = info_by_dni_lg_table.calls_ivr_id
+GROUP BY ivr_id, phone_number, ivr_result,start_date, end_date, customer_segment, ivr_language, steps_module, module_aggregation, vdn_aggregation,document_type,document_identification,customer_phone, billing_account_id
+ORDER by ivr_id
