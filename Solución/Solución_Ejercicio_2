@@ -1,0 +1,598 @@
+/* Hola Alex, 
+
+Este es mi script para el ejercicio dos basado en lo explicado en el PDF del ejercicio 1. He intentado comentar cada query para que puedas entender que es lo que prentendía en cada momento.
+
+Asimismo, los datos que he adjuntos son aleatorios. He intentado dentro de lo que cabe darle un sentido a los datos (por ejemplo la información de la tabla bootcamps la he completado con la información de la página web de KeepCoding) pero los usuarios, sus domicilios o las asignatuas me las he inventado. En general, he intentado que los datos introducidos tengan sentido para que cuando se ejecuten las querys la información que aparezca sea razonable. Sin embargo, como obsevarás, al haberlo hecho de forma aleatoria los datos están ¨descompensados¨. Es decir, por ejemplo, un bootcamp tiene asociado 4 asignaturas y otro 2.
+
+Por último, destacar que el código que hay en este query está pensado para ser copiado en PostgreSQL. Simplementeo, he decidido copiarlo en una query de Bigquery para tener un medio por el que poder transmitírtelo de forma ordenada y legible. 
+
+Muchas gracias
+Un saludo
+Pedro Turiel
+*/
+
+-- Crear la tabla COUNTRY
+CREATE TABLE country (
+    country_id SERIAL PRIMARY KEY,
+    name VARCHAR(255)
+);
+
+-- Crear la tabla PROVINCE
+CREATE TABLE province (
+    province_id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    country_id INT,
+    FOREIGN KEY (country_id) REFERENCES country(country_id)
+    
+);
+
+-- Crear la tabla CITY
+CREATE TABLE city (
+    city_id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    province_id INT, 
+    FOREIGN KEY (province_id) REFERENCES province(province_id)
+    
+);
+
+
+-- Crear la tabla street
+CREATE TABLE street (
+    street_id SERIAL PRIMARY KEY,
+    name VARCHAR(255)
+);
+
+-- Crear la tabla STREET_CITY
+CREATE TABLE street_city (
+    street_city_id SERIAL PRIMARY KEY,
+    city_id INT,
+    street_id INT,
+    FOREIGN KEY (street_id) REFERENCES street(street_id),
+    FOREIGN KEY (city_id) REFERENCES city(city_id)
+    
+);
+-- Crear la tabla users
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    surname VARCHAR(255),
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
+    date_birth DATE,
+    street_id INT,
+    FOREIGN KEY (street_id) REFERENCES street(street_id)
+    
+);
+-- Query para que el email de cada usuario sea unico
+ALTER TABLE users
+ADD CONSTRAINT unique_email UNIQUE (email);
+
+
+
+-- Crear la tabla type_role
+CREATE TABLE type_role (
+    type_role_id SERIAL PRIMARY KEY,
+    description VARCHAR(255) NOT NULL
+    
+);
+
+-- Crear la tabla role
+CREATE TABLE role (
+    role_id SERIAL PRIMARY KEY,
+    type_role_id INT,
+    user_id INT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (type_role_id) REFERENCES type_role(type_role_id)
+    
+);
+
+
+-- Crear la tabla credentials
+CREATE TABLE credentials (
+  	cred_id SERIAL PRIMARY KEY,
+    user_id INT,
+    username VARCHAR(255),
+    password VARCHAR(255),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+    
+);
+
+-- Crear la tabla bootcamps
+CREATE TABLE bootcamps (
+  	bootcamp_id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    duration INT,
+    start_date DATE
+    
+);
+
+-- Crear la tabla function
+CREATE TABLE functions (
+  	functions_id SERIAL PRIMARY KEY,
+  	user_id INT, 
+  	bootcamp_id INT, 
+  	FOREIGN KEY (user_id) REFERENCES users(user_id),
+  	FOREIGN KEY (bootcamp_id) REFERENCES bootcamps(bootcamp_id)
+    
+);
+
+-- Crear la tabla subjects
+CREATE TABLE subjects (
+  	subject_id SERIAL PRIMARY KEY,
+  	name VARCHAR(255),
+  	modulo VARCHAR(255),
+  	duration INT
+);
+
+-- Crear la tabla subjects_bootcamps
+CREATE TABLE subjects_bootcamps (
+  	sub_boot_id SERIAL PRIMARY KEY,
+  	bootcamp_id INT, 
+  	subject_id INT, 
+  	FOREIGN KEY (bootcamp_id) REFERENCES bootcamps(bootcamp_id),
+  	FOREIGN KEY (subject_id) REFERENCES subjects(subject_id)
+);
+
+-- Inserto los roles creados para la academia Keepcoding
+INSERT INTO type_role (description)
+VALUES
+  ('Student'),
+  ('Teacher'),
+  ('Administrator'),
+  ('Future student'),
+  ('Future teacher'),
+  ('Future administrator');
+
+-- Inserto los valores de calles. Los valores son aleatorios.
+INSERT INTO street (name)
+VALUES
+  ('Broadway'),
+  ('Champs-Élysées'),
+  ('Abbey Road'),
+  ('Rodeo Drive'),
+  ('Ginza'),
+  ('La Rambla'),
+  ('Lombard Street'),
+  ('Via Veneto'),
+  ('Orchard Road'),
+  ('Princes Street'),
+  ('Kurfürstendamm'),
+  ('Nathan Road'),
+  ('Oxford Street'),
+  ('Gran Vía'),
+  ('Fifth Avenue'),
+  ('Grafton Street'),
+  ('Rua Augusta'),
+  ('Nevsky Prospect'),
+  ('Ginza'),
+  ('Melrose Avenue'),
+  ('Calle mayor'),
+  ('Calle mayor'),
+  ('Avenida Cristobal Colon'),
+  ('Avenida Cristobal Colon');
+ 
+ 
+
+-- Inserto los valores de los paises basado en las calles elegidas. 
+INSERT INTO country (name)
+VALUES
+  ('Estados Unidos'),
+  ('Francia'),
+  ('Reino Unido'),
+  ('Japón'),
+  ('España'),
+  ('Italia'),
+  ('Singapur'),
+  ('Alemania'),
+  ('Hong Kong'),
+  ('Irlanda'),
+  ('Portugal'),
+  ('Rusia'),
+  ('Mexico');
+
+  
+
+-- Inserto los valores de las provincias basado en las calles elegidas. 
+INSERT INTO province (name,country_id)
+VALUES
+  ('Nueva York', 1),
+  ('Isla de Francia',2),
+  ('Gran Condado',3),
+  ('California',1),
+  ('Kanto',4),
+  ('Cataluña',5),
+  ('California',1),
+  ('Lazio',6),
+  ('Edimburgo',3),
+  ('Berlin',8),
+  ('Guangdon',9),
+  ('Leinster',10),
+  ('Lisboa',11),
+  ('San Petersburgo',12),
+  ('Madrid',5),
+  ('Johor',7),
+  ('Guipuzcoa',5),
+  ('Jalisco',13),
+  ('Castilla-La Mancha',5) ;
+  
+-- Inserto los valores de las ciudades basado en las calles elegidas. 
+INSERT INTO city (name,province_id)
+VALUES
+  ('Nueva York',1),
+  ('Paris',2),
+  ('Londres',3),
+  ('Los Angeles',4),
+  ('Tokio',5),
+  ('Barcelona',6),
+  ('San Francisco',7),
+  ('Roma',8),
+  ('Edimburgo',9),
+  ('Berlin',10),
+  ('Hong Kong',11),
+  ('Dublin',12),
+  ('Lisboa',13),
+  ('San Petersburgo',14),
+  ('Madrid',15),
+  ('Singapur',16),
+  ('San Sebastian',17),
+  ('Guadalajara Mexico',18),
+  ('Guadalajara España',19);
+  
+
+-- Inserto la relacion entre las calles y las ciudades. Puede ser que el nombre de una misma calle se encuentre en varias ciudades, por eso la relacion es N:M.
+
+INSERT INTO street_city (city_id, street_id)
+VALUES 
+	(1,1),
+	(2,2),
+	(3,3),
+	(4,4),
+	(5,5),
+	(6,6),
+	(7,7),
+	(8,8),
+	(16,9),
+	(9,10),
+	(10,11),
+	(11,12),
+	(3,13),
+	(15,14),
+	(1,15),
+	(12,16),
+	(13,17),
+	(14,18),
+	(5,19),
+	(4,20),
+	(15,21),
+	(17,22),
+	(18,23),
+	(19,24);
+
+
+-- compruebo que las tablas funcionan
+
+SELECT street."name" as calle
+	, city.name as ciudad
+	, province."name" as provincia
+	,country."name" as pais
+FROM street_city 
+JOIN street
+ON street.street_id=street_city.street_id
+JOIN city 
+ON street_city.city_id=city.city_id
+JOIN province
+ON city.province_id=province.province_id
+JOIN country
+ON province.country_id=country.country_id 
+
+
+-- insertos los datos de los usuarios
+
+INSERT INTO users (name, surname, email, phone, date_birth, street_id)
+VALUES
+  ('Juan', 'González', 'juan.gonzalez@email.com', '123456789', DATE '1990-01-01', 1),
+  ('María', 'Martínez', 'maria.martinez@email.com', '987654321', DATE '1985-05-15', 2),
+  ('Carlos', 'Rodríguez', 'carlos.rodriguez@email.com', '555123456', DATE '1988-09-22', 3),
+  ('Laura', 'Fernández', 'laura.fernandez@email.com', '456789012', DATE '1992-12-10', 4),
+  ('Miguel', 'López', 'miguel.lopez@email.com', '789012345', DATE'1982-03-08', 5),
+  ('Sofía', 'Gómez', 'sofia.gomez@email.com', '234567890', DATE'1995-06-30', 6),
+  ('Alejandro', 'Díaz', 'alejandro.diaz@email.com', '678901234', DATE'1987-11-18', 7),
+  ('Olivia', 'Hernández', 'olivia.hernandez@email.com', '345678901', DATE'1993-04-25', 8),
+  ('Guillermo', 'Vázquez', 'guillermo.vazquez@email.com', '890123456',DATE '1984-08-12', 9),
+  ('Ana', 'Jiménez', 'ana.jimenez@email.com', '012345678', DATE'1998-02-03', 10),
+  ('Javier', 'Ramos', 'javier.ramos@email.com', '567890123', DATE'1989-07-17', 11),
+  ('Marta', 'García', 'marta.garcia@email.com', '123456789',DATE '1994-09-28', 12),
+  ('Daniel', 'Blanco', 'daniel.blanco@email.com', '234567890', DATE'1986-05-07', 13),
+  ('Elena', 'Moreno', 'elena.moreno@email.com', '678901234', DATE'1997-10-14', 14),
+  ('Luis', 'Suárez', 'luis.suarez@email.com', '345678901', DATE'1983-12-21', 15),
+  ('Alicia', 'Herrera', 'alicia.herrera@email.com', '890123456',DATE '1996-08-04', 16),
+  ('Lucas', 'Gutiérrez', 'lucas.gutierrez@email.com', '012345678', DATE'1981-02-09', 17),
+  ('Sara', 'Romero', 'sara.romero@email.com', '567890123',DATE '1999-04-01', 18),
+  ('Eduardo', 'Torres', 'eduardo.torres@email.com', '123456789', DATE'1980-06-15', 19),
+  ('Isabel', 'Wright', 'isabel.wright@email.com', '234567890',DATE '2000-09-23', 20),
+  ('Alejandro', 'Pérez', 'alejandro.perez@email.com', '678901234', DATE'1982-11-07', 21),
+  ('Rocío', 'García', 'rocio.garcia@email.com', '345678901', DATE'1991-03-12', 22),
+  ('Pedro', 'Olivares', 'pedro.olivares@email.com', '890123456', DATE'1984-05-26', 23),
+  ('Elena', 'Jackson', 'elena.jackson@email.com', '012345678', DATE'1995-07-31', 24);
+  
+
+  
+-- inserto la relacion entre los usuarios y sus roles. La relacion es N:M porque puede ser que una persona tenga mas de un rol asociado
+
+INSERT INTO role(type_role_id,user_id)
+VALUES
+	(3,1), -- El usuario 1 es una persona que trabaja en al administracion pero a su vez estudia un bootcamp.
+	(1,1),
+	(2,2),
+	(3,3),
+	(4,4),
+	(5,5),
+	(2,6),-- El usuario seis es un profesor de un bootcamp que a su vez es estudiante en otro bootcamp.
+	(1,6),
+	(6,7),
+	(4,8),
+	(5,9),
+	(6,10),
+	(1,11),
+	(2,12),
+	(3,13),
+	(1,14),--El estudiante 14 es un estudiante brillante que Keepcoding ha contactado con el porque desea que sea profesor el curso que viene. 
+	(5,14),
+	(1,15),
+	(2,16),
+	(3,17),
+	(4,18),
+	(5,19),
+	(6,20),
+	(1,21),
+	(2,22),
+	(3,23),
+	(3,24),-- El usuario cuatro es una persona que trabaja tanto en la administracion como de profesor.
+	(2,24);
+
+-- compruebo que funciona la relacion entre los usuarios y sus roles
+
+SELECT users.name AS nombre
+	, type_role.description AS rol
+FROM users 
+JOIN role 
+ON users.user_id= role.user_id 
+JOIN type_role 
+ON role.type_role_id=type_role.type_role_id
+
+-- actualizo los valores de la tabla type_role a español para utilizar la funcion update
+
+UPDATE type_role
+--SET description = 'Estudiante' where type_role_id=1;
+--SET description = 'Profesor' where type_role_id=2;
+--SET description = 'Administracion' where type_role_id=3;
+--SET description = 'Futuro estudiante' where type_role_id=4;
+--SET description = 'Futuro profesor' where type_role_id=5;
+SET description = 'Futuro administacion' where type_role_id=6;
+
+-- inserto los valores en la tabla credenciales
+
+INSERT INTO credentials (user_id, username, password)
+VALUES
+  (1,'Juan_keepcoding', '123456789'),
+  (2,'María_keepcoding', '987654321'),
+  (3,'Carlos_keepcoding', '555123456'),
+  (4,'Laura_keepcoding', '456789012'),
+  (5,'Miguel_keepcoding', '789012345'),
+  (6,'Sofía_keepcoding', '234567890'),
+  (7,'Alejandro_keepcoding', '678901234'),
+  (8,'Olivia_keepcoding', '345678901'),
+  (9,'Guillermo_keepcoding',  '890123456'),
+  (10,'Ana_keepcoding', '012345678'),
+  (11,'Javier_keepcoding', '567890123'),
+  (12,'Marta_keepcoding','123456789'),
+  (13,'Daniel_keepcoding',  '234567890'),
+  (14,'Elena_keepcoding',  '678901234'),
+  (15,'Luis_keepcoding',  '345678901'),
+  (16,'Alicia_keepcoding', '890123456'),
+  (17,'Lucas_keepcoding', '012345678'),
+  (18,'Sara_keepcoding', '567890123'),
+  (19,'Eduardo_keepcoding', '123456789'),
+  (20,'Isabel_keepcoding', '234567890'),
+  (21,'Alejandro_keepcoding', '678901234'),
+  (22,'Rocío_keepcoding',  '345678901'),
+  (23,'Pedro_keepcoding',  '890123456'),
+  (24,'Elena_keepcoding',  '012345678');
+  
+  
+-- compruebo que funciona las dos tablas 
+SELECT users.name 
+	, credentials.username
+	, credentials."password"
+FROM users 
+JOIN credentials
+ON users.user_id=credentials.user_id
+WHERE users.name = 'Isabel'
+
+
+-- inserto los datos en la tabla bootcamp
+INSERT INTO bootcamps (name, duration, start_date)
+VALUES 
+	('Aprende a Programar desde Cero Full Stack Jr. Bootcamp',6, DATE '04/03/2024'),
+	('Desarrollo Web Full Stack Bootcamp',8,DATE '05/27/2024'),
+	('Desarrollo de Apps Móviles iOS Full Stack Bootcamp',8, DATE '05/27/2024'),
+	('Big Data, Inteligencia Artificial & Machine Learning Full Stack Bootcamp',8, DATE '05/27/2024'),
+	('DevOps & Cloud Computing Full Stack Bootcamp',6,DATE '05/27/2024'),
+	('Ciberseguridad Full Stack Bootcamp',7, DATE '05/27/2024'),
+	('Marketing Digital y Análisis de Datos Bootcamp',5, DATE '11/24/2023'),
+	('Diseño UX/UI AI Driven Full Stack Bootcamp',6, DATE '05/27/2024'),
+	('Blockchain y Criptoactivos Full Stack Bootcamp',6, DATE '05/27/2024'),
+	('Inteligencia Artificial Full Stack Bootcamp',8, DATE '05/27/2024');
+	
+	
+-- creo la tabla de relacion entre los bootcamps y los usuarios. Esta relacion tambien es N:M proque puede ser que una misma persona trabaje/estudie mas de un bootcamp. 
+INSERT INTO functions(user_id,bootcamp_id)
+VALUES
+	(1,1), 
+	(1,2),
+	(2,3),
+	(3,4),
+	(4,5),
+	(5,6),
+	(6,7),
+	(6,8),
+	(7,9),
+	(8,10),
+	(9,1),
+	(10,2),
+	(11,3),
+	(12,4),
+	(13,5),
+	(14,6),
+	(14,7),
+	(15,8),
+	(16,9),
+	(17,10),
+	(18,1),
+	(19,2),
+	(20,3),
+	(21,4),
+	(22,5),
+	(23,6),
+	(24,7),
+	(24,8);
+	
+-- compruebo que se ha creado la relacion correctamente. Usuarios asociados a un bootcamp aleatorio.
+
+SELECT users."name"
+	, bootcamps."name"
+FROM users 
+JOIN functions 
+ON users.user_id=functions.user_id
+JOIN bootcamps 
+ON functions.bootcamp_id=bootcamps.bootcamp_id
+WHERE bootcamps.bootcamp_id=8
+
+
+
+-- inserto los datos de las asignaturas
+INSERT INTO subjects (name, modulo, duration)
+VALUES
+  ('Introducción a Big Data Analytics', 'Big Data', 6),
+  ('Procesamiento de Datos Masivos', 'Big Data', 9),
+  ('Algoritmos Avanzados de Inteligencia Artificial', 'Inteligencia Artificial', 8),
+  ('Desarrollo de Aplicaciones de Aprendizaje Automático', 'Inteligencia Artificial', 10),
+  ('Programación Avanzada en Python', 'Programación', 5),
+  ('Desarrollo de Software Escalable', 'Programación', 7),
+  ('Fundamentos de Blockchain y Criptomonedas', 'Blockchain', 6),
+  ('Desarrollo de Contratos Inteligentes', 'Blockchain', 8),
+  ('Seguridad en Desarrollo de Software', 'Ciberseguridad', 7),
+  ('Fundamentos de Ciberseguridad', 'Ciberseguridad', 6),
+  ('Análisis Forense Digital', 'Ciberseguridad', 9),
+  ('Desarrollo de Aplicaciones Seguras', 'Ciberseguridad', 8),
+  ('Diseño de Experiencia de Usuario (UX)', 'Diseño UX/UI', 5),
+  ('Principios de Interfaz de Usuario (UI)', 'Diseño UX/UI', 4),
+  ('Diseño Centrado en el Usuario', 'Diseño UX/UI', 6),
+  ('Prototipado Rápido de Interfaces', 'Diseño UX/UI', 4),
+  ('Estrategias de Marketing Digital', 'Marketing Digital', 5),
+  ('SEO y Posicionamiento Web', 'Marketing Digital', 6),
+  ('Publicidad Digital y Google Ads', 'Marketing Digital', 7),
+  ('Analítica Web y Google Analytics', 'Marketing Digital', 6),
+  ('Marketing de Contenidos', 'Marketing Digital', 5),
+  ('Automatización de Marketing', 'Marketing Digital', 8),
+  ('Estrategias de Email Marketing', 'Marketing Digital', 4),
+  ('Desarrollo de Aplicaciones Web Modernas', 'Programación', 9),
+  ('Cloud Computing y Servicios en la Nube', 'Programación', 8),
+  ('Arquitectura de Microservicios', 'Programación', 7),
+  ('DevOps y Despliegue Continuo', 'Programación', 6),
+  ('Internet de las Cosas (IoT)', 'Programación', 9),
+  ('Análisis Predictivo y Data Science', 'Big Data', 10),
+  ('Ética en Tecnología y Transformación Digital', 'Ética y Transformación Digital', 5);
+  
+  
+-- creo la relacion entre las asignaturas y los bootcamps. He intentado seguir mas o menos un poco de logica a la hora de asociarlos pero esta hecho de forma rapida por lo que puede ser que existan bootcamps con mas asignaturas. 
+
+INSERT INTO subjects_bootcamps (bootcamp_id,subject_id)
+  VALUES
+  	(1,1),
+	(4,1),
+	(10,1),
+	(4,2),
+	(10,2),
+	(6,2),
+	(10,3),
+	(10,4),
+	(1,5),
+	(2,5),
+	(3,5),
+	(1,6),
+	(9,7),
+	(9,8),
+	(6,10),
+	(6,11),
+	(6,12),
+	(8,13),
+	(8,14),
+	(8,15),
+	(8,16),
+	(7,13),
+	(7,17),
+	(7,18),
+	(7,19),
+	(7,20),
+	(7,21),
+	(7,22),
+	(7,23),
+	(5,24),
+	(5,25),
+	(5,26),
+	(5,27),
+	(5,28),
+	(1,24),
+	(1,25),
+	(1,26),
+	(1,27),
+	(1,28),
+	(2,14),
+	(2,13),
+	(5,29),
+	(4,29),
+	(10,29),
+	(1,30),
+	(2,30),
+	(3,30),
+	(4,30),
+	(5,30),
+	(6,30),
+	(7,30),
+	(8,30),
+	(9,30),
+	(10,30);
+
+-- compruebo que la conexion bootcamp - asignaturas funciona
+
+SELECT bootcamps."name"	
+	, COUNT(subjects.name)
+FROM bootcamps
+JOIN subjects_bootcamps
+ON bootcamps.bootcamp_id=subjects_bootcamps.bootcamp_id
+JOIN subjects 
+ON subjects_bootcamps.subject_id=subjects.subject_id
+GROUP BY bootcamps.name;
+--WHERE bootcamps.bootcamp_id = 10
+
+
+-- por ultimo realizo unos ejercicios aleatorios para comprobar que todo funciona correctamente. 
+
+-- 1. Extrae el nombre los alumnos que estudian el bootcamp de marketing
+	
+SELECT users."name"
+	, type_role.description
+	, bootcamps."name"
+FROM users 
+JOIN role 
+ON users.user_id=role.user_id
+JOIN type_role 
+ON type_role.type_role_id=role.type_role_id
+JOIN functions 
+ON users.user_id=functions.user_id
+JOIN bootcamps 
+ON functions.bootcamp_id=bootcamps.bootcamp_id
+WHERE type_role.type_role_id=1 AND bootcamps.bootcamp_id=7
+
+
