@@ -1,4 +1,4 @@
-# Practica-SQL-y-DW---Pedro-T
+# Practica-SQL-y-DW--Pedro-T
 La practica que pueden observar en este repositorio fue realizada al finalizar el modulo de SQL-Data warehousing correspondiente al bootcamp de inteligencia artificial de la academia Keepcoding. En el propio repositorio pueden encontrar una carpeta con el enunciado de la practica y los datos que poseia al inicio de la misma. Asimismo, dentro del repositorio, en la carpeta Solucion pueden encontrar los diferentes scripts y documentos generados para resolver el ejercicio. 
 
 Esta practica ha sido muy util ya que ha permitido plasmar todos los conociemtos adquiridos durante este modulo. En los dos primeros ejercicios, se solicito desarrollar la base de datos de la academia Keepcoding y crearla por medio Postgre SQL. En el documento Ejercicio 1_ BBDD Keepcoding se puede apreciar la solucion detallada que plantee, asi como unos graficos donde permite visualizar la misma. Por otro lado, el script que desarrolla e introduce todos los datos en la BBDD planteada, se encuentra en el repositiorio bajo el nombre de Solucion_Ejercicio_2.
